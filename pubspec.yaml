@@ -1,0 +1,29 @@
+name: piramid_game
+description: "PiramidGame IFPR-Pgua - Ranking de Popularidade dos Alunos"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  auto_injector: ^2.1.1
+  cupertino_icons: ^1.0.8
+  equatable: ^2.0.8
+  flutter:
+    sdk: flutter
+  go_router: ^17.1.0
+  google_fonts: ^8.0.1
+  intl: ^0.20.2
+  shared_preferences: ^2.5.4
+  signals_flutter: ^6.3.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
