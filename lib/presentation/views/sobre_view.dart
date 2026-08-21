@@ -110,7 +110,7 @@ class SobreView extends StatelessWidget {
               title: 'Armazenamento de Dados',
               content:
                   'Todos os dados são armazenados localmente no dispositivo '
-                  'utilizando SharedPreferences. Os dados permanecem salvos '
+                  'utilizando SQLite (banco de dados local). Os dados permanecem salvos '
                   'mesmo após fechar o aplicativo.',
             ),
 
@@ -133,7 +133,7 @@ class SobreView extends StatelessWidget {
               title: 'Tecnologias',
               content:
                   '• Flutter (framework principal)\n'
-                  '• SharedPreferences (armazenamento local)\n'
+                  '• SQLite com sqflite (banco de dados local)\n'
                   '• go_router (navegação)\n'
                   '• Flutter Signals (gerência de estado reativa)\n'
                   '• Padrão MVVM + Command + Result\n'

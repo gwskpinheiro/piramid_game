@@ -10,21 +10,13 @@ final class AlunoRepositoryImpl implements IAlunoRepository {
       : _localStorage = localStorage;
 
   @override
-  Future<AlunoResult> salvarAluno(Aluno aluno) =>
-      _localStorage.salvarAluno(aluno);
-
+  Future<AlunoResult> salvarAluno(Aluno aluno) => _localStorage.salvarAluno(aluno);
   @override
-  Future<ListAlunoResult> obterTodosAlunos() =>
-      _localStorage.obterTodosAlunos();
-
+  Future<ListAlunoResult> obterTodosAlunos() => _localStorage.obterTodosAlunos();
   @override
-  Future<AlunoResult> obterAlunoPorId(String id) =>
-      _localStorage.obterAlunoPorId(id);
-
+  Future<AlunoResult> obterAlunoPorId(String id) => _localStorage.obterAlunoPorId(id);
   @override
-  Future<AlunoResult> atualizarAluno(Aluno aluno) =>
-      _localStorage.atualizarAluno(aluno);
-
+  Future<AlunoResult> atualizarAluno(Aluno aluno) => _localStorage.atualizarAluno(aluno);
   @override
   Future<VoidResult> deletarAluno(String id) => _localStorage.deletarAluno(id);
 }

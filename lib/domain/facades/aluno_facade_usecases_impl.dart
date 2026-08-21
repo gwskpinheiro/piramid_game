@@ -17,34 +17,13 @@ final class AlunoFacadeUseCasesImpl implements IAlunoFacadeUseCases {
     required IAtualizarAlunoUseCase atualizar,
     required IDeletarAlunoUseCase deletar,
     required ICalcularRankingUseCase ranking,
-  })  : _cadastrar = cadastrar,
-        _obterTodos = obterTodos,
-        _obterPorId = obterPorId,
-        _atualizar = atualizar,
-        _deletar = deletar,
-        _ranking = ranking;
+  })  : _cadastrar = cadastrar, _obterTodos = obterTodos, _obterPorId = obterPorId,
+        _atualizar = atualizar, _deletar = deletar, _ranking = ranking;
 
-  @override
-  Future<AlunoResult> cadastrarAluno(AlunoParams params) =>
-      _cadastrar(params);
-
-  @override
-  Future<ListAlunoResult> obterTodosAlunos(NoParams params) =>
-      _obterTodos(params);
-
-  @override
-  Future<AlunoResult> obterAlunoPorId(AlunoIdParams params) =>
-      _obterPorId(params);
-
-  @override
-  Future<AlunoResult> atualizarAluno(AlunoParams params) =>
-      _atualizar(params);
-
-  @override
-  Future<VoidResult> deletarAluno(AlunoIdParams params) =>
-      _deletar(params);
-
-  @override
-  Future<ListAlunoResult> calcularRanking(NoParams params) =>
-      _ranking(params);
+  @override Future<AlunoResult> cadastrarAluno(AlunoParams params) => _cadastrar(params);
+  @override Future<ListAlunoResult> obterTodosAlunos(NoParams params) => _obterTodos(params);
+  @override Future<AlunoResult> obterAlunoPorId(AlunoIdParams params) => _obterPorId(params);
+  @override Future<AlunoResult> atualizarAluno(AlunoParams params) => _atualizar(params);
+  @override Future<VoidResult> deletarAluno(AlunoIdParams params) => _deletar(params);
+  @override Future<ListAlunoResult> calcularRanking(NoParams params) => _ranking(params);
 }

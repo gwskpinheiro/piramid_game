@@ -4,7 +4,7 @@ import '../../core/theme/theme_controller.dart';
 import '../../data/repositories/aluno_repository_impl.dart';
 import '../../data/repositories/aluno_repository_interface.dart';
 import '../../data/services/aluno_local_storage_interface.dart';
-import '../../data/services/aluno_shared_preferences_impl.dart';
+import '../../data/services/aluno_sqlite_impl.dart';         // ← SQLite
 import '../../domain/facades/aluno_facade_usecases_impl.dart';
 import '../../domain/facades/aluno_facade_usecases_interface.dart';
 import '../../domain/usecases/aluno_usecases_impl.dart';
@@ -17,10 +17,10 @@ void setupDependencyInjection() {
   // Core
   injector.addSingleton<ThemeController>(ThemeController.new);
 
-  // Data — Services
-  injector.addSingleton<IAlunoLocalStorage>(AlunoSharedPreferencesService.new);
+  // Data — Service (SQLite)
+  injector.addSingleton<IAlunoLocalStorage>(AlunoSqliteService.new);
 
-  // Data — Repositories
+  // Data — Repository
   injector.addSingleton<IAlunoRepository>(AlunoRepositoryImpl.new);
 
   // Domain — Use Cases

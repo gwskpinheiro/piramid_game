@@ -1,7 +1,6 @@
 name: piramid_game
 description: "PiramidGame IFPR-Pgua - Ranking de Popularidade dos Alunos"
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -16,8 +15,10 @@ dependencies:
   go_router: ^17.1.0
   google_fonts: ^8.0.1
   intl: ^0.20.2
-  shared_preferences: ^2.5.4
+  path: ^1.9.1
   signals_flutter: ^6.3.0
+  sqflite: ^2.4.2
+  sqflite_common_ffi_web: ^0.4.5+1
   uuid: ^4.5.1
 
 dev_dependencies:

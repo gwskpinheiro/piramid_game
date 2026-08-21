@@ -22,11 +22,7 @@ final class CadastrarAlunoUseCaseImpl implements ICadastrarAlunoUseCase {
       return r.Error(InputFailure('O nome do aluno é obrigatório.'));
     }
     final now = DateTime.now();
-    final novoAluno = aluno.copyWith(
-      id: _uuid.v4(),
-      createdAt: now,
-      updatedAt: now,
-    );
+    final novoAluno = aluno.copyWith(id: _uuid.v4(), createdAt: now, updatedAt: now);
     return _repository.salvarAluno(novoAluno);
   }
 }
@@ -37,8 +33,7 @@ final class ObterTodosAlunosUseCaseImpl implements IObterTodosAlunosUseCase {
       : _repository = repository;
 
   @override
-  Future<ListAlunoResult> call(NoParams params) =>
-      _repository.obterTodosAlunos();
+  Future<ListAlunoResult> call(NoParams params) => _repository.obterTodosAlunos();
 }
 
 final class ObterAlunoPorIdUseCaseImpl implements IObterAlunoPorIdUseCase {
@@ -62,8 +57,7 @@ final class AtualizarAlunoUseCaseImpl implements IAtualizarAlunoUseCase {
     if (aluno.nome.trim().isEmpty) {
       return r.Error(InputFailure('O nome do aluno é obrigatório.'));
     }
-    final updated = aluno.copyWith(updatedAt: DateTime.now());
-    return _repository.atualizarAluno(updated);
+    return _repository.atualizarAluno(aluno.copyWith(updatedAt: DateTime.now()));
   }
 }
 

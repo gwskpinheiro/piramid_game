@@ -1,33 +1,20 @@
 import 'package:equatable/equatable.dart';
 
-/// Cursos disponíveis no IFPR – Campus Paranaguá
 enum Curso {
-  info,
-  mec,
-  mamb,
-  prod,
-  tads,
-  tga;
+  info, mec, mamb, prod, tads, tga;
 
   String get displayName {
     switch (this) {
-      case Curso.info:
-        return 'INFO';
-      case Curso.mec:
-        return 'MEC';
-      case Curso.mamb:
-        return 'MAMB';
-      case Curso.prod:
-        return 'PROD';
-      case Curso.tads:
-        return 'TADS';
-      case Curso.tga:
-        return 'TGA';
+      case Curso.info: return 'INFO';
+      case Curso.mec:  return 'MEC';
+      case Curso.mamb: return 'MAMB';
+      case Curso.prod: return 'PROD';
+      case Curso.tads: return 'TADS';
+      case Curso.tga:  return 'TGA';
     }
   }
 }
 
-/// Critérios de popularidade — 15 no total, nota de 1 a 5 estrelas
 class CriteriosPopularidade extends Equatable {
   final int resenha;
   final int presencaVip;
@@ -46,57 +33,25 @@ class CriteriosPopularidade extends Equatable {
   final int caosControlado;
 
   const CriteriosPopularidade({
-    this.resenha = 1,
-    this.presencaVip = 1,
-    this.aura = 1,
-    this.modoParceiro = 1,
-    this.carisma = 1,
-    this.humorMilhoes = 1,
-    this.energiaGrupo = 1,
-    this.criatividadeCaotica = 1,
-    this.modoAtleta = 1,
-    this.talentopalco = 1,
-    this.dripEscolar = 1,
-    this.coracaoDorama = 1,
-    this.queridinhoProf = 1,
-    this.cerebroTurbo = 1,
-    this.caosControlado = 1,
+    this.resenha = 1, this.presencaVip = 1, this.aura = 1,
+    this.modoParceiro = 1, this.carisma = 1, this.humorMilhoes = 1,
+    this.energiaGrupo = 1, this.criatividadeCaotica = 1, this.modoAtleta = 1,
+    this.talentopalco = 1, this.dripEscolar = 1, this.coracaoDorama = 1,
+    this.queridinhoProf = 1, this.cerebroTurbo = 1, this.caosControlado = 1,
   });
 
-  /// Pontuação total (Nível Lenda): soma de todos os 15 critérios
   int get nivelLenda =>
-      resenha +
-      presencaVip +
-      aura +
-      modoParceiro +
-      carisma +
-      humorMilhoes +
-      energiaGrupo +
-      criatividadeCaotica +
-      modoAtleta +
-      talentopalco +
-      dripEscolar +
-      coracaoDorama +
-      queridinhoProf +
-      cerebroTurbo +
-      caosControlado;
+      resenha + presencaVip + aura + modoParceiro + carisma +
+      humorMilhoes + energiaGrupo + criatividadeCaotica + modoAtleta +
+      talentopalco + dripEscolar + coracaoDorama + queridinhoProf +
+      cerebroTurbo + caosControlado;
 
   CriteriosPopularidade copyWith({
-    int? resenha,
-    int? presencaVip,
-    int? aura,
-    int? modoParceiro,
-    int? carisma,
-    int? humorMilhoes,
-    int? energiaGrupo,
-    int? criatividadeCaotica,
-    int? modoAtleta,
-    int? talentopalco,
-    int? dripEscolar,
-    int? coracaoDorama,
-    int? queridinhoProf,
-    int? cerebroTurbo,
-    int? caosControlado,
+    int? resenha, int? presencaVip, int? aura, int? modoParceiro,
+    int? carisma, int? humorMilhoes, int? energiaGrupo,
+    int? criatividadeCaotica, int? modoAtleta, int? talentopalco,
+    int? dripEscolar, int? coracaoDorama, int? queridinhoProf,
+    int? cerebroTurbo, int? caosControlado,
   }) {
     return CriteriosPopularidade(
       resenha: resenha ?? this.resenha,
@@ -118,22 +73,14 @@ class CriteriosPopularidade extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'resenha': resenha,
-        'presencaVip': presencaVip,
-        'aura': aura,
-        'modoParceiro': modoParceiro,
-        'carisma': carisma,
-        'humorMilhoes': humorMilhoes,
-        'energiaGrupo': energiaGrupo,
-        'criatividadeCaotica': criatividadeCaotica,
-        'modoAtleta': modoAtleta,
-        'talentopalco': talentopalco,
-        'dripEscolar': dripEscolar,
-        'coracaoDorama': coracaoDorama,
-        'queridinhoProf': queridinhoProf,
-        'cerebroTurbo': cerebroTurbo,
-        'caosControlado': caosControlado,
-      };
+    'resenha': resenha, 'presencaVip': presencaVip, 'aura': aura,
+    'modoParceiro': modoParceiro, 'carisma': carisma,
+    'humorMilhoes': humorMilhoes, 'energiaGrupo': energiaGrupo,
+    'criatividadeCaotica': criatividadeCaotica, 'modoAtleta': modoAtleta,
+    'talentopalco': talentopalco, 'dripEscolar': dripEscolar,
+    'coracaoDorama': coracaoDorama, 'queridinhoProf': queridinhoProf,
+    'cerebroTurbo': cerebroTurbo, 'caosControlado': caosControlado,
+  };
 
   factory CriteriosPopularidade.fromMap(Map<String, dynamic> map) =>
       CriteriosPopularidade(
@@ -144,8 +91,7 @@ class CriteriosPopularidade extends Equatable {
         carisma: (map['carisma'] as int? ?? 1).clamp(1, 5),
         humorMilhoes: (map['humorMilhoes'] as int? ?? 1).clamp(1, 5),
         energiaGrupo: (map['energiaGrupo'] as int? ?? 1).clamp(1, 5),
-        criatividadeCaotica:
-            (map['criatividadeCaotica'] as int? ?? 1).clamp(1, 5),
+        criatividadeCaotica: (map['criatividadeCaotica'] as int? ?? 1).clamp(1, 5),
         modoAtleta: (map['modoAtleta'] as int? ?? 1).clamp(1, 5),
         talentopalco: (map['talentopalco'] as int? ?? 1).clamp(1, 5),
         dripEscolar: (map['dripEscolar'] as int? ?? 1).clamp(1, 5),
@@ -157,14 +103,13 @@ class CriteriosPopularidade extends Equatable {
 
   @override
   List<Object?> get props => [
-        resenha, presencaVip, aura, modoParceiro, carisma,
-        humorMilhoes, energiaGrupo, criatividadeCaotica, modoAtleta,
-        talentopalco, dripEscolar, coracaoDorama, queridinhoProf,
-        cerebroTurbo, caosControlado,
-      ];
+    resenha, presencaVip, aura, modoParceiro, carisma,
+    humorMilhoes, energiaGrupo, criatividadeCaotica, modoAtleta,
+    talentopalco, dripEscolar, coracaoDorama, queridinhoProf,
+    cerebroTurbo, caosControlado,
+  ];
 }
 
-/// Lista de critérios com nome e getter, para facilitar renderização na UI
 const listaCriterios = [
   ('Resenha', 'Mede o quanto o aluno anima a turma e contribui para o ambiente descontraído.'),
   ('Presença VIP', 'Avalia o quanto o aluno é lembrado e reconhecido pelos colegas.'),
@@ -183,7 +128,6 @@ const listaCriterios = [
   ('Caos Controlado', 'Mede o quanto é zoeiro e imprevisível, mas dentro dos limites saudáveis.'),
 ];
 
-/// Entidade principal do Aluno
 class Aluno extends Equatable {
   final String id;
   final String nome;
@@ -196,51 +140,33 @@ class Aluno extends Equatable {
   final DateTime updatedAt;
 
   const Aluno({
-    required this.id,
-    required this.nome,
-    required this.apelido,
-    required this.curso,
-    required this.turmaAno,
-    required this.dataNascimento,
-    required this.criterios,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.id, required this.nome, required this.apelido,
+    required this.curso, required this.turmaAno, required this.dataNascimento,
+    required this.criterios, required this.createdAt, required this.updatedAt,
   });
 
   int get nivelLenda => criterios.nivelLenda;
 
   Aluno copyWith({
-    String? id,
-    String? nome,
-    String? apelido,
-    Curso? curso,
-    int? turmaAno,
-    DateTime? dataNascimento,
-    CriteriosPopularidade? criterios,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? id, String? nome, String? apelido, Curso? curso,
+    int? turmaAno, DateTime? dataNascimento, CriteriosPopularidade? criterios,
+    DateTime? createdAt, DateTime? updatedAt,
   }) {
     return Aluno(
-      id: id ?? this.id,
-      nome: nome ?? this.nome,
-      apelido: apelido ?? this.apelido,
-      curso: curso ?? this.curso,
-      turmaAno: turmaAno ?? this.turmaAno,
+      id: id ?? this.id, nome: nome ?? this.nome, apelido: apelido ?? this.apelido,
+      curso: curso ?? this.curso, turmaAno: turmaAno ?? this.turmaAno,
       dataNascimento: dataNascimento ?? this.dataNascimento,
       criterios: criterios ?? this.criterios,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt, updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
   List<Object?> get props => [
-        id, nome, apelido, curso, turmaAno,
-        dataNascimento, criterios, createdAt, updatedAt,
-      ];
+    id, nome, apelido, curso, turmaAno, dataNascimento, criterios, createdAt, updatedAt,
+  ];
 
   @override
   String toString() =>
-      'Aluno(id: $id, nome: $nome, curso: ${curso.displayName}, '
-      'turma: $turmaAno, nivelLenda: $nivelLenda)';
+      'Aluno(id: $id, nome: $nome, curso: ${curso.displayName}, nivelLenda: $nivelLenda)';
 }
