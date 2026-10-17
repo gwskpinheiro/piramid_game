@@ -5,6 +5,7 @@ import '../../core/di/dependency_injection.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_controller.dart';
+import '../controllers/auth_viewmodel.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -12,6 +13,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeCtrl = injector.get<ThemeController>();
+    final authVm = injector.get<AuthViewModel>();
     final scheme = Theme.of(context).colorScheme;
 
     return Drawer(child: SafeArea(child: Column(children: [
@@ -24,6 +26,18 @@ class AppDrawer extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text('PiramidGame', style: context.textStyles.titleLarge?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.bold)),
           Text('IFPR – Campus Paranaguá', style: context.textStyles.bodySmall?.copyWith(color: scheme.onPrimary.withOpacity(0.8))),
+          Watch((_) {
+            final usuario = authVm.authState.usuario.value;
+            if (usuario == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Row(children: [
+                Icon(Icons.account_circle_rounded, size: 18, color: scheme.onPrimary),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(child: Text(usuario.nomeExibicao, overflow: TextOverflow.ellipsis, style: context.textStyles.bodyMedium?.copyWith(color: scheme.onPrimary))),
+              ]),
+            );
+          }),
         ]),
       ),
       const SizedBox(height: AppSpacing.sm),
@@ -32,6 +46,14 @@ class AppDrawer extends StatelessWidget {
       _DrawerItem(icon: Icons.leaderboard_rounded, label: 'Ranking', onTap: () { Navigator.pop(context); context.goNamed(AppRouteNames.ranking); }),
       const Divider(height: AppSpacing.lg),
       _DrawerItem(icon: Icons.info_outline_rounded, label: 'Sobre o App', onTap: () { Navigator.pop(context); context.goNamed(AppRouteNames.sobre); }),
+      // O redirect do go_router leva ao Login assim que a sessão é encerrada.
+      _DrawerItem(icon: Icons.logout_rounded, label: 'Sair', onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.pop(context);
+        final ok = await authVm.commands.sair();
+        final msg = authVm.authState.mensagem.value;
+        if (!ok && msg != null) messenger.showSnackBar(SnackBar(content: Text(msg)));
+      }),
       const Spacer(),
       Watch((_) {
         final isLight = themeCtrl.isLightMode.value;

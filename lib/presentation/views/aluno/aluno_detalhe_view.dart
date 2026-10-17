@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/di/dependency_injection.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/models/aluno_entity.dart';
-import '../../../presentation/controllers/aluno_viewmodel.dart';
-import '../../widgets/star_rating.dart';
+import '../../../domain/models/avaliacao_entity.dart';
+import '../../../domain/models/pessoa_entity.dart';
+import '../../../presentation/controllers/auth_viewmodel.dart';
+import '../../../presentation/controllers/avaliacao_viewmodel.dart';
+import '../../../presentation/controllers/pessoa_viewmodel.dart';
+import '../../widgets/aviso_avaliacao.dart';
 
 class AlunoDetalheView extends StatefulWidget {
   final String alunoId;
@@ -18,20 +22,29 @@ class AlunoDetalheView extends StatefulWidget {
 }
 
 class _AlunoDetalheViewState extends State<AlunoDetalheView> {
-  late final AlunoViewModel _vm;
-  Aluno? _aluno;
+  late final PessoaViewModel _vm;
+  late final AuthViewModel _authVm;
+  late final AvaliacaoViewModel _avaliacaoVm;
+  Pessoa? _aluno;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _vm = injector.get<AlunoViewModel>();
+    _vm = injector.get<PessoaViewModel>();
+    _authVm = injector.get<AuthViewModel>();
+    _avaliacaoVm = injector.get<AvaliacaoViewModel>();
+    // Após o primeiro frame, pelo mesmo motivo da tela de avaliação: os
+    // signals de avaliação são compartilhados e observados por outras telas.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _avaliacaoVm.commands.carregar(widget.alunoId);
+    });
     _buscar();
   }
 
   Future<void> _buscar() async {
     // Tenta primeiro na lista em memória (mais rápido)
-    final emMemoria = _vm.alunoState.alunos.value;
+    final emMemoria = _vm.pessoaState.pessoas.value;
     if (emMemoria.isNotEmpty) {
       try {
         final encontrado = emMemoria.firstWhere((a) => a.id == widget.alunoId);
@@ -39,9 +52,37 @@ class _AlunoDetalheViewState extends State<AlunoDetalheView> {
         return;
       } catch (_) {}
     }
-    // Se não encontrou em memória, busca pelo use case (buscar por identificador)
-    final aluno = await _vm.commands.buscarAlunoPorId(widget.alunoId);
+    // Se não encontrou em memória, busca no Firestore pelo identificador
+    final aluno = await _vm.commands.buscarPessoaPorId(widget.alunoId);
+    if (!mounted) return;
     setState(() { _aluno = aluno; _loading = false; });
+  }
+
+  Future<void> _confirmarExclusao(Pessoa aluno) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover Aluno'),
+        content: Text('Deseja remover "${aluno.nome}"?\nEssa ação não pode ser desfeita.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final ok = await _vm.commands.deletarPessoa(aluno.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok
+          ? '"${aluno.nome}" removido.'
+          : (_vm.pessoaState.mensagem.value ?? 'Não foi possível remover.')),
+    ));
+    if (ok) context.goNamed(AppRouteNames.alunos);
   }
 
   @override
@@ -63,11 +104,13 @@ class _AlunoDetalheViewState extends State<AlunoDetalheView> {
                 : context.goNamed(AppRouteNames.alunos),
           ),
         ),
-        body: const Center(child: Text('Aluno não encontrado.')),
+        body: Center(child: Text(_vm.pessoaState.mensagem.value ?? 'Aluno não encontrado.')),
       );
     }
 
     final aluno = _aluno!;
+    // Edição/exclusão só para quem cadastrou (também garantido pelas regras).
+    final ehCriador = _authVm.authState.usuario.value?.uid == aluno.criadoPor;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,14 +122,21 @@ class _AlunoDetalheViewState extends State<AlunoDetalheView> {
               : context.goNamed(AppRouteNames.alunos),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_rounded),
-            tooltip: 'Editar',
-            onPressed: () => context.goNamed(
-              'aluno_form_edit',
-              pathParameters: {'id': aluno.id},
+          if (ehCriador) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              tooltip: 'Editar',
+              onPressed: () => context.goNamed(
+                'aluno_form_edit',
+                pathParameters: {'id': aluno.id},
+              ),
             ),
-          ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: 'Remover',
+              onPressed: () => _confirmarExclusao(aluno),
+            ),
+          ],
         ],
       ),
       body: SingleChildScrollView(
@@ -96,17 +146,13 @@ class _AlunoDetalheViewState extends State<AlunoDetalheView> {
           children: [
             _ProfileHeader(aluno: aluno),
             const SizedBox(height: AppSpacing.lg),
-            _NivelLendaCard(aluno: aluno),
-            const SizedBox(height: AppSpacing.lg),
-            Text('⭐ Critérios de Popularidade',
-                style: context.textStyles.titleLarge?.semiBold),
-            const SizedBox(height: AppSpacing.md),
-            _CriteriosList(criterios: aluno.criterios),
+            _MinhaAvaliacaoCard(vm: _avaliacaoVm, pessoaId: aluno.id),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'Cadastrado em: ${DateFormat('dd/MM/yyyy HH:mm').format(aluno.createdAt)}',
+              'Cadastrado em: ${DateFormat('dd/MM/yyyy HH:mm').format(aluno.createdAt)}'
+              '${ehCriador ? ' · por você' : ''}',
               style: context.textStyles.bodySmall
-                  ?.copyWith(color: scheme.onSurface.withOpacity(0.5)),
+                  ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.5)),
             ),
             const SizedBox(height: AppSpacing.xxl),
           ],
@@ -117,7 +163,7 @@ class _AlunoDetalheViewState extends State<AlunoDetalheView> {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  final Aluno aluno;
+  final Pessoa aluno;
   const _ProfileHeader({required this.aluno});
 
   @override
@@ -210,117 +256,78 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _NivelLendaCard extends StatelessWidget {
-  final Aluno aluno;
-  const _NivelLendaCard({required this.aluno});
+/// Situação da avaliação do usuário autenticado sobre esta pessoa:
+/// aviso (sem vínculo / autoavaliação), botão Avaliar ou Editar avaliação.
+class _MinhaAvaliacaoCard extends StatelessWidget {
+  final AvaliacaoViewModel vm;
+  final String pessoaId;
+  const _MinhaAvaliacaoCard({required this.vm, required this.pessoaId});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final pontos = aluno.nivelLenda;
-    final percent = (pontos - 15) / (75 - 15);
-
-    return Container(
-      padding: AppSpacing.paddingLg,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('🏆 Nível Lenda',
-                    style: context.textStyles.titleMedium?.semiBold),
-                Text('Pontuação Total',
-                    style: context.textStyles.bodySmall?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.6),
-                    )),
-              ]),
-              Text('$pontos pts',
-                  style: context.textStyles.headlineSmall?.copyWith(
-                    color: scheme.primary, fontWeight: FontWeight.bold,
-                  )),
-            ],
+    return Watch((_) {
+      final st = vm.avaliacaoState;
+      if (st.isLoading.value || st.pessoaId.value != pessoaId) {
+        return const Padding(
+          padding: AppSpacing.paddingMd,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      final erro = st.erroCarregamento.value;
+      final permissao = st.permissao.value;
+      if (erro != null || permissao == null) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(erro ?? 'Não foi possível verificar se você pode avaliar esta pessoa.',
+              style: context.textStyles.bodySmall?.copyWith(color: scheme.error)),
+          TextButton.icon(
+            onPressed: () => vm.commands.carregar(pessoaId),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Tentar novamente'),
           ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: percent.clamp(0.0, 1.0),
-              minHeight: 12,
-              backgroundColor: scheme.outline.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('15 pts (mín)',
-                  style: context.textStyles.bodySmall
-                      ?.copyWith(color: scheme.onSurface.withOpacity(0.5))),
-              Text('75 pts (máx)',
-                  style: context.textStyles.bodySmall
-                      ?.copyWith(color: scheme.onSurface.withOpacity(0.5))),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+        ]);
+      }
+      if (permissao != PermissaoAvaliacao.permitida) {
+        return AvisoAvaliacao(permissao: permissao);
+      }
 
-class _CriteriosList extends StatelessWidget {
-  final CriteriosPopularidade criterios;
-  const _CriteriosList({required this.criterios});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final nomes = [
-      'Resenha', 'Presença VIP', 'Aura', 'Modo Parceiro',
-      'Carisma Natural', 'Humor de Milhões', 'Energia de Grupo',
-      'Criatividade Caótica', 'Modo Atleta', 'Talento de Palco',
-      'Drip Escolar', 'Coração de Dorama', 'Queridinho dos Professores',
-      'Cérebro Turbo', 'Caos Controlado',
-    ];
-    final valores = [
-      criterios.resenha, criterios.presencaVip, criterios.aura,
-      criterios.modoParceiro, criterios.carisma, criterios.humorMilhoes,
-      criterios.energiaGrupo, criterios.criatividadeCaotica,
-      criterios.modoAtleta, criterios.talentopalco, criterios.dripEscolar,
-      criterios.coracaoDorama, criterios.queridinhoProf,
-      criterios.cerebroTurbo, criterios.caosControlado,
-    ];
-
-    return Column(
-      children: List.generate(15, (i) => Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: AppSpacing.paddingMd,
+      final avaliacao = st.avaliacaoAtual.value;
+      return Container(
+        width: double.infinity,
+        padding: AppSpacing.paddingLg,
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        child: Row(
-          children: [
-            Expanded(child: Text('${i + 1}. ${nomes[i]}',
-                style: context.textStyles.titleSmall)),
-            StarRating(stars: valores[i], size: 20),
-            const SizedBox(width: AppSpacing.sm),
-            SizedBox(
-              width: 30,
-              child: Text('${valores[i]}/5',
-                  style: context.textStyles.bodySmall?.copyWith(
-                    color: scheme.primary, fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.end),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('⭐ Minha Avaliação', style: context.textStyles.titleMedium?.semiBold),
+              Text(
+                avaliacao == null
+                    ? 'Você ainda não avaliou esta pessoa.'
+                    : 'Avaliada em ${DateFormat('dd/MM/yyyy HH:mm').format(avaliacao.dataAvaliacao)}',
+                style: context.textStyles.bodySmall
+                    ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)),
+              ),
+            ]),
+            if (avaliacao != null)
+              Text('${avaliacao.nivelLenda} pts',
+                  style: context.textStyles.headlineSmall
+                      ?.copyWith(color: scheme.primary, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.goNamed(AppRouteNames.avaliar,
+                  pathParameters: {'id': pessoaId}),
+              icon: Icon(avaliacao == null ? Icons.star_rounded : Icons.edit_rounded),
+              label: Text(avaliacao == null ? 'Avaliar' : 'Editar minha avaliação'),
             ),
-          ],
-        ),
-      )),
-    );
+          ),
+        ]),
+      );
+    });
   }
 }

@@ -5,8 +5,9 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/di/dependency_injection.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/models/aluno_entity.dart';
-import '../../../presentation/controllers/aluno_viewmodel.dart';
+import '../../../domain/models/pessoa_entity.dart';
+import '../../../presentation/controllers/auth_viewmodel.dart';
+import '../../../presentation/controllers/pessoa_viewmodel.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/empty_state.dart';
 
@@ -18,19 +19,21 @@ class AlunosListView extends StatefulWidget {
 }
 
 class _AlunosListViewState extends State<AlunosListView> {
-  late final AlunoViewModel _vm;
+  late final PessoaViewModel _vm;
+  late final AuthViewModel _authVm;
   final _buscaCtrl = TextEditingController();
   String _termoBusca = '';
 
   @override
   void initState() {
     super.initState();
-    _vm = injector.get<AlunoViewModel>();
+    _vm = injector.get<PessoaViewModel>();
+    _authVm = injector.get<AuthViewModel>();
     _buscaCtrl.addListener(() {
       setState(() => _termoBusca = _buscaCtrl.text.trim().toLowerCase());
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _vm.commands.carregarAlunos();
+      _vm.commands.carregarPessoas();
     });
   }
 
@@ -40,7 +43,7 @@ class _AlunosListViewState extends State<AlunosListView> {
     super.dispose();
   }
 
-  List<Aluno> _filtrar(List<Aluno> alunos) {
+  List<Pessoa> _filtrar(List<Pessoa> alunos) {
     if (_termoBusca.isEmpty) return alunos;
     return alunos.where((a) {
       return a.nome.toLowerCase().contains(_termoBusca) ||
@@ -50,13 +53,13 @@ class _AlunosListViewState extends State<AlunosListView> {
     }).toList();
   }
 
-  Future<void> _confirmarExclusao(BuildContext context, Aluno aluno) async {
+  Future<void> _confirmarExclusao(BuildContext context, Pessoa aluno) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Remover Aluno'),
         content: Text(
-            'Deseja remover "${aluno.nome}" do ranking?\nEssa ação não pode ser desfeita.'),
+            'Deseja remover "${aluno.nome}"?\nEssa ação não pode ser desfeita.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -72,10 +75,12 @@ class _AlunosListViewState extends State<AlunosListView> {
     );
 
     if (confirm == true) {
-      await _vm.commands.deletarAluno(aluno.id);
-      if (mounted) {
+      final ok = await _vm.commands.deletarPessoa(aluno.id);
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${aluno.nome}" removido do ranking.')),
+          SnackBar(content: Text(ok
+              ? '"${aluno.nome}" removido.'
+              : (_vm.pessoaState.mensagem.value ?? 'Não foi possível remover.'))),
         );
       }
     }
@@ -90,7 +95,7 @@ class _AlunosListViewState extends State<AlunosListView> {
         title: const Text('Alunos'),
         actions: [
           Watch((_) {
-            final total = _vm.alunoState.totalAlunos.value;
+            final total = _vm.pessoaState.totalPessoas.value;
             if (total == 0) return const SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -122,11 +127,21 @@ class _AlunosListViewState extends State<AlunosListView> {
         label: const Text('Novo Aluno'),
       ),
       body: Watch((_) {
-        if (_vm.alunoState.isLoading.value) {
+        if (_vm.pessoaState.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final todos = _vm.alunoState.alunos.value;
+        final todos = _vm.pessoaState.pessoas.value;
+        final erro = _vm.pessoaState.mensagem.value;
+
+        if (todos.isEmpty && erro != null) {
+          return EmptyState(
+            icon: Icons.cloud_off_rounded,
+            message: erro,
+            actionLabel: 'Tentar novamente',
+            onAction: _vm.commands.carregarPessoas,
+          );
+        }
 
         if (todos.isEmpty) {
           return EmptyState(
@@ -200,7 +215,7 @@ class _AlunosListViewState extends State<AlunosListView> {
                           'Nenhum aluno encontrado\npara "$_termoBusca".',
                     )
                   : RefreshIndicator(
-                      onRefresh: _vm.commands.carregarAlunos,
+                      onRefresh: _vm.commands.carregarPessoas,
                       child: ListView.separated(
                         padding: AppSpacing.paddingMd,
                         itemCount: filtrados.length,
@@ -209,6 +224,8 @@ class _AlunosListViewState extends State<AlunosListView> {
                         itemBuilder: (context, index) {
                           final aluno = filtrados[index];
                           return _AlunoCard(
+                            podeGerenciar: _authVm.authState.usuario.value?.uid ==
+                                aluno.criadoPor,
                             aluno: aluno,
                             termoBusca: _termoBusca,
                             onTap: () => context.goNamed(
@@ -234,8 +251,10 @@ class _AlunosListViewState extends State<AlunosListView> {
 }
 
 class _AlunoCard extends StatelessWidget {
-  final Aluno aluno;
+  final Pessoa aluno;
   final String termoBusca;
+  /// Editar/remover só aparecem para quem cadastrou a pessoa.
+  final bool podeGerenciar;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -243,6 +262,7 @@ class _AlunoCard extends StatelessWidget {
   const _AlunoCard({
     required this.aluno,
     required this.termoBusca,
+    required this.podeGerenciar,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
@@ -251,7 +271,6 @@ class _AlunoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final pontos = aluno.nivelLenda;
 
     return Card(
       child: InkWell(
@@ -310,38 +329,10 @@ class _AlunoCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          scheme.primary,
-                          scheme.secondary.withOpacity(0.8)
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$pontos',
-                      style: context.textStyles.titleSmall?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Nível Lenda',
-                    style: context.textStyles.bodySmall?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.5),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              if (!podeGerenciar)
+                Icon(Icons.chevron_right_rounded,
+                    color: scheme.onSurface.withValues(alpha: 0.4)),
+              if (podeGerenciar)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 onSelected: (value) {

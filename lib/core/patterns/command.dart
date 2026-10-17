@@ -26,14 +26,23 @@ abstract base class Command<Success, Error>
   late final isSuccess = computed(() => _result.value?.isSuccess ?? false);
   // late final data = computed(() => _result.value?.successValueOrNull);
 
+  // Execução em andamento (reaproveitada se call() for chamado de novo)
+  Future<Result<Success, Error>>? _emAndamento;
+
   // Método para executar o comando com tratamento
-  Future<Result<Success, Error>> call() async {
-    if (_running.value) return _result.value!; // já está rodando
+  Future<Result<Success, Error>> call() =>
+      _emAndamento ??= _executar().whenComplete(() => _emAndamento = null);
+
+  Future<Result<Success, Error>> _executar() async {
     _running.value = true; // indica que está rodando
     _result.value = null; // limpa resultado anterior
-    _result.value = await execute(); // executa a ação
-    _running.value = false; // indica que terminou
-    return _result.value!;
+    try {
+      final result = await execute(); // executa a ação
+      _result.value = result;
+      return result;
+    } finally {
+      _running.value = false; // indica que terminou (mesmo com exceção)
+    }
   }
 
   void clear() {

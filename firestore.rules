@@ -1,0 +1,175 @@
+rules_version = '2';
+
+// Regras do PiramidGame — Cloud Firestore
+// - Nenhum acesso público: tudo exige usuário autenticado.
+// - pessoas: qualquer usuário logado lê; o cadastro registra o uid do criador
+//   em `criadoPor`; somente o criador altera ou exclui.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    // Valida os campos cadastrais (sem notas: avaliações ficam em outra coleção).
+    function pessoaValida(d) {
+      return d.keys().hasOnly(['nome', 'apelido', 'curso', 'turmaAno',
+                               'dataNascimento', 'criadoPor', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['nome', 'apelido', 'curso', 'turmaAno',
+                            'dataNascimento', 'criadoPor', 'createdAt', 'updatedAt'])
+        && d.nome is string && d.nome.size() > 0 && d.nome.size() <= 100
+        && d.apelido is string && d.apelido.size() <= 60
+        && d.curso in ['info', 'mec', 'mamb', 'prod', 'tads', 'tga']
+        && d.turmaAno is int && d.turmaAno >= 1990 && d.turmaAno <= 2100
+        && d.dataNascimento is timestamp
+        && d.criadoPor is string
+        && d.createdAt is timestamp
+        && d.updatedAt is timestamp;
+    }
+
+    match /pessoas/{pessoaId} {
+      allow read: if autenticado();
+
+      // O criador precisa ser o próprio usuário; datas vêm do servidor.
+      allow create: if autenticado()
+        && pessoaValida(request.resource.data)
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      // Só o criador altera; criadoPor e createdAt são imutáveis.
+      allow update: if autenticado()
+        && resource.data.criadoPor == request.auth.uid
+        && pessoaValida(request.resource.data)
+        && request.resource.data.criadoPor == resource.data.criadoPor
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if autenticado()
+        && resource.data.criadoPor == request.auth.uid;
+    }
+
+    // ── usuarios ────────────────────────────────────────────────────────────
+    // Perfil gravado pelo próprio usuário; `pessoaId` (vínculo com uma pessoa
+    // cadastrada) é gravado SOMENTE pelo administrador via Firebase Console,
+    // que não passa por estas regras. O cliente nunca cria, altera ou remove
+    // `pessoaId`, nem na criação do documento.
+
+    function camposPerfil() {
+      return ['nome', 'email', 'foto', 'provider', 'ultimoAcesso'];
+    }
+
+    function perfilValido(d) {
+      return d.nome is string && d.nome.size() <= 100
+        && d.email is string && d.email.size() <= 200
+        && d.foto is string && d.foto.size() <= 2000
+        && d.provider is string && d.provider.size() <= 50
+        && d.ultimoAcesso == request.time;
+    }
+
+    match /usuarios/{uid} {
+      allow read: if autenticado() && request.auth.uid == uid;
+
+      allow create: if autenticado() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(camposPerfil())
+        && perfilValido(request.resource.data);
+
+      // affectedKeys inclui campos adicionados, alterados e removidos:
+      // qualquer mudança em pessoaId é recusada.
+      allow update: if autenticado() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(camposPerfil())
+        && perfilValido(request.resource.data);
+
+      allow delete: if false;
+    }
+
+    // ── avaliacoes ──────────────────────────────────────────────────────────
+    // id = pessoaId + '_' + avaliadorUid → uma avaliação ativa por usuário/pessoa.
+    // Só avalia quem tem vínculo administrativo válido; autoavaliação bloqueada.
+
+    function camposAvaliacao() {
+      return ['avaliadorUid', 'pessoaId',
+              'resenha', 'presencaVip', 'aura', 'modoParceiro', 'carismaNatural',
+              'humorDeMilhoes', 'energiaDeGrupo', 'criatividadeCaotica', 'modoAtleta',
+              'talentoDePalco', 'dripEscolar', 'coracaoDeDorama',
+              'queridinhoProfessores', 'cerebroTurbo', 'caosControlado',
+              'pontuacaoTotal', 'createdAt', 'dataAvaliacao'];
+    }
+
+    function nota(v) {
+      return v is int && v >= 1 && v <= 5;
+    }
+
+    function avaliacaoValida(d) {
+      return d.keys().hasOnly(camposAvaliacao())
+        && d.keys().hasAll(camposAvaliacao())
+        && d.avaliadorUid is string && d.pessoaId is string
+        && nota(d.resenha) && nota(d.presencaVip) && nota(d.aura)
+        && nota(d.modoParceiro) && nota(d.carismaNatural) && nota(d.humorDeMilhoes)
+        && nota(d.energiaDeGrupo) && nota(d.criatividadeCaotica) && nota(d.modoAtleta)
+        && nota(d.talentoDePalco) && nota(d.dripEscolar) && nota(d.coracaoDeDorama)
+        && nota(d.queridinhoProfessores) && nota(d.cerebroTurbo) && nota(d.caosControlado)
+        && d.pontuacaoTotal is int
+        && d.pontuacaoTotal == d.resenha + d.presencaVip + d.aura + d.modoParceiro
+             + d.carismaNatural + d.humorDeMilhoes + d.energiaDeGrupo
+             + d.criatividadeCaotica + d.modoAtleta + d.talentoDePalco
+             + d.dripEscolar + d.coracaoDeDorama + d.queridinhoProfessores
+             + d.cerebroTurbo + d.caosControlado
+        && d.createdAt is timestamp
+        && d.dataAvaliacao == request.time;
+    }
+
+    function docUsuario() {
+      return /databases/$(database)/documents/usuarios/$(request.auth.uid);
+    }
+
+    // Vínculo válido: usuarios/{uid}.pessoaId preenchido e apontando para
+    // uma pessoa existente.
+    function vinculoValido() {
+      return exists(docUsuario())
+        && get(docUsuario()).data.get('pessoaId', null) is string
+        && get(docUsuario()).data.pessoaId != ''
+        && exists(/databases/$(database)/documents/pessoas/$(get(docUsuario()).data.pessoaId));
+    }
+
+    function naoEhAutoavaliacao(pessoaId) {
+      return get(docUsuario()).data.pessoaId != pessoaId;
+    }
+
+    function pessoaExiste(pessoaId) {
+      return exists(/databases/$(database)/documents/pessoas/$(pessoaId));
+    }
+
+    match /avaliacoes/{avaliacaoId} {
+      // Necessário para o ranking global (média de todos os avaliadores).
+      allow read: if autenticado();
+
+      allow create: if autenticado()
+        && avaliacaoValida(request.resource.data)
+        && request.resource.data.avaliadorUid == request.auth.uid
+        && avaliacaoId == request.resource.data.pessoaId + '_' + request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && pessoaExiste(request.resource.data.pessoaId)
+        && vinculoValido()
+        && naoEhAutoavaliacao(request.resource.data.pessoaId);
+
+      // Só o próprio avaliador altera; avaliador, pessoa e createdAt imutáveis.
+      allow update: if autenticado()
+        && resource.data.avaliadorUid == request.auth.uid
+        && avaliacaoValida(request.resource.data)
+        && request.resource.data.avaliadorUid == resource.data.avaliadorUid
+        && request.resource.data.pessoaId == resource.data.pessoaId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && pessoaExiste(resource.data.pessoaId)
+        && vinculoValido()
+        && naoEhAutoavaliacao(resource.data.pessoaId);
+
+      allow delete: if false;
+    }
+
+    // Qualquer outro caminho permanece bloqueado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

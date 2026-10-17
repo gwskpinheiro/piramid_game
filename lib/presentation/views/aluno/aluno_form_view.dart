@@ -5,9 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../core/di/dependency_injection.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/models/aluno_entity.dart';
-import '../../../presentation/controllers/aluno_viewmodel.dart';
-import '../../widgets/star_rating.dart';
+import '../../../domain/models/pessoa_entity.dart';
+import '../../../presentation/controllers/pessoa_viewmodel.dart';
 
 class AlunoFormView extends StatefulWidget {
   /// Se [alunoId] for null, é cadastro. Senão, é edição.
@@ -27,36 +26,42 @@ class _AlunoFormViewState extends State<AlunoFormView> {
   Curso _cursoSelecionado = Curso.tads;
   int _turmaSelecionada = 2024;
   DateTime _dataNascimento = DateTime(2000, 1, 1);
-  CriteriosPopularidade _criterios = const CriteriosPopularidade();
+  Pessoa? _original;
   bool _isSaving = false;
   bool _loaded = false;
 
   bool get isEditing => widget.alunoId != null;
 
-  late final AlunoViewModel _vm;
+  late final PessoaViewModel _vm;
 
   @override
   void initState() {
     super.initState();
-    _vm = injector.get<AlunoViewModel>();
+    _vm = injector.get<PessoaViewModel>();
     if (isEditing) {
-      _carregarAluno();
+      _carregarPessoa();
     } else {
       _loaded = true;
     }
   }
 
-  void _carregarAluno() {
-    final alunos = _vm.alunoState.alunos.value;
+  Future<void> _carregarPessoa() async {
+    Pessoa? p;
     try {
-      final a = alunos.firstWhere((a) => a.id == widget.alunoId);
-      _nomeCtrl.text = a.nome;
-      _apelidoCtrl.text = a.apelido;
-      _cursoSelecionado = a.curso;
-      _turmaSelecionada = a.turmaAno;
-      _dataNascimento = a.dataNascimento;
-      _criterios = a.criterios;
-    } catch (_) {}
+      p = _vm.pessoaState.pessoas.value.firstWhere((a) => a.id == widget.alunoId);
+    } catch (_) {
+      // Não está em memória (ex.: link direto) — busca no Firestore.
+      p = await _vm.commands.buscarPessoaPorId(widget.alunoId!);
+    }
+    if (!mounted) return;
+    if (p != null) {
+      _original = p;
+      _nomeCtrl.text = p.nome;
+      _apelidoCtrl.text = p.apelido;
+      _cursoSelecionado = p.curso;
+      _turmaSelecionada = p.turmaAno;
+      _dataNascimento = p.dataNascimento;
+    }
     setState(() => _loaded = true);
   }
 
@@ -83,50 +88,34 @@ class _AlunoFormViewState extends State<AlunoFormView> {
     setState(() => _isSaving = true);
 
     final now = DateTime.now();
-    Aluno? alunoOriginal;
-    if (isEditing) {
-      try {
-        alunoOriginal = _vm.alunoState.alunos.value
-            .firstWhere((a) => a.id == widget.alunoId);
-      } catch (_) {}
-    }
-
-    final alunoParaSalvar = Aluno(
-      id: isEditing ? widget.alunoId! : '',
+    final pessoa = Pessoa(
+      id: _original?.id ?? '',
       nome: _nomeCtrl.text.trim(),
       apelido: _apelidoCtrl.text.trim(),
       curso: _cursoSelecionado,
       turmaAno: _turmaSelecionada,
       dataNascimento: _dataNascimento,
-      criterios: _criterios,
-      createdAt: alunoOriginal?.createdAt ?? now,
+      criadoPor: _original?.criadoPor ?? '', // no cadastro, definido no use case
+      createdAt: _original?.createdAt ?? now,
       updatedAt: now,
     );
 
-    if (isEditing) {
-      await _vm.commands.atualizarAluno(alunoParaSalvar);
-    } else {
-      await _vm.commands.cadastrarAluno(alunoParaSalvar);
-    }
+    final ok = isEditing
+        ? await _vm.commands.atualizarPessoa(pessoa)
+        : await _vm.commands.cadastrarPessoa(pessoa);
 
+    if (!mounted) return;
     setState(() => _isSaving = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEditing
-              ? '✅ Aluno atualizado com sucesso!'
-              : '✅ Aluno cadastrado com sucesso!'),
-        ),
-      );
-      context.goNamed(AppRouteNames.alunos);
-    }
+    final msg = ok
+        ? (isEditing ? '✅ Aluno atualizado com sucesso!' : '✅ Aluno cadastrado com sucesso!')
+        : (_vm.pessoaState.mensagem.value ?? 'Não foi possível salvar.');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (ok) context.goNamed(AppRouteNames.alunos);
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     if (!_loaded) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -139,7 +128,9 @@ class _AlunoFormViewState extends State<AlunoFormView> {
           onPressed: () => context.canPop() ? context.pop() : context.goNamed(AppRouteNames.alunos),
         ),
       ),
-      body: Form(
+      body: isEditing && _original == null
+          ? const Center(child: Text('Aluno não encontrado.'))
+          : Form(
         key: _formKey,
         child: ListView(
           padding: AppSpacing.paddingMd,
@@ -155,11 +146,12 @@ class _AlunoFormViewState extends State<AlunoFormView> {
                 prefixIcon: Icon(Icons.person),
                 border: OutlineInputBorder(),
               ),
+              maxLength: 100,
               textCapitalization: TextCapitalization.words,
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'O nome é obrigatório.' : null,
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
             TextFormField(
               controller: _apelidoCtrl,
@@ -169,12 +161,13 @@ class _AlunoFormViewState extends State<AlunoFormView> {
                 prefixIcon: Icon(Icons.tag),
                 border: OutlineInputBorder(),
               ),
+              maxLength: 60,
               textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
             DropdownButtonFormField<Curso>(
-              value: _cursoSelecionado,
+              initialValue: _cursoSelecionado,
               decoration: const InputDecoration(
                 labelText: 'Curso *',
                 prefixIcon: Icon(Icons.school),
@@ -188,7 +181,7 @@ class _AlunoFormViewState extends State<AlunoFormView> {
             const SizedBox(height: AppSpacing.md),
 
             DropdownButtonFormField<int>(
-              value: _turmaSelecionada,
+              initialValue: _turmaSelecionada,
               decoration: const InputDecoration(
                 labelText: 'Turma/Ano *',
                 prefixIcon: Icon(Icons.calendar_view_month),
@@ -216,52 +209,6 @@ class _AlunoFormViewState extends State<AlunoFormView> {
             ),
 
             const SizedBox(height: AppSpacing.xl),
-            _SectionHeader(title: '⭐ Critérios de Popularidade'),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Avalie cada critério de 1 a 5 estrelas.',
-              style: context.textStyles.bodySmall
-                  ?.copyWith(color: scheme.onSurface.withOpacity(0.6)),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            ..._buildCriterioWidgets(scheme),
-
-            const SizedBox(height: AppSpacing.lg),
-            Container(
-              padding: AppSpacing.paddingMd,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [scheme.primary, scheme.secondary.withOpacity(0.8)],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Nível Lenda',
-                          style: context.textStyles.titleSmall
-                              ?.copyWith(color: Colors.white)),
-                      Text('Pontuação total',
-                          style: context.textStyles.bodySmall
-                              ?.copyWith(color: Colors.white.withOpacity(0.8))),
-                    ],
-                  ),
-                  Text(
-                    '${_criterios.nivelLenda} pts',
-                    style: context.textStyles.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
 
             SizedBox(
               height: 52,
@@ -282,94 +229,6 @@ class _AlunoFormViewState extends State<AlunoFormView> {
           ],
         ),
       ),
-    );
-  }
-
-  List<Widget> _buildCriterioWidgets(ColorScheme scheme) {
-    final nomes = [
-      'Resenha', 'Presença VIP', 'Aura', 'Modo Parceiro',
-      'Carisma Natural', 'Humor de Milhões', 'Energia de Grupo',
-      'Criatividade Caótica', 'Modo Atleta', 'Talento de Palco',
-      'Drip Escolar', 'Coração de Dorama', 'Queridinho dos Professores',
-      'Cérebro Turbo', 'Caos Controlado',
-    ];
-
-    final valores = [
-      _criterios.resenha, _criterios.presencaVip, _criterios.aura,
-      _criterios.modoParceiro, _criterios.carisma, _criterios.humorMilhoes,
-      _criterios.energiaGrupo, _criterios.criatividadeCaotica,
-      _criterios.modoAtleta, _criterios.talentopalco, _criterios.dripEscolar,
-      _criterios.coracaoDorama, _criterios.queridinhoProf,
-      _criterios.cerebroTurbo, _criterios.caosControlado,
-    ];
-
-    return List.generate(15, (i) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: AppSpacing.paddingMd,
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: scheme.outline.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${i + 1}. ${nomes[i]}',
-                      style: context.textStyles.titleSmall?.medium),
-                  const SizedBox(height: 4),
-                  Text(
-                    listaCriterios[i].$2,
-                    style: context.textStyles.bodySmall?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.55),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Column(
-              children: [
-                StarRating(
-                  stars: valores[i],
-                  size: 26,
-                  interactive: true,
-                  onChanged: (v) => setState(() {
-                    _criterios = _updateCriterio(i, v);
-                  }),
-                ),
-                Text('${valores[i]}/5',
-                    style: context.textStyles.bodySmall?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.5),
-                    )),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  CriteriosPopularidade _updateCriterio(int index, int value) {
-    return _criterios.copyWith(
-      resenha: index == 0 ? value : null,
-      presencaVip: index == 1 ? value : null,
-      aura: index == 2 ? value : null,
-      modoParceiro: index == 3 ? value : null,
-      carisma: index == 4 ? value : null,
-      humorMilhoes: index == 5 ? value : null,
-      energiaGrupo: index == 6 ? value : null,
-      criatividadeCaotica: index == 7 ? value : null,
-      modoAtleta: index == 8 ? value : null,
-      talentopalco: index == 9 ? value : null,
-      dripEscolar: index == 10 ? value : null,
-      coracaoDorama: index == 11 ? value : null,
-      queridinhoProf: index == 12 ? value : null,
-      cerebroTurbo: index == 13 ? value : null,
-      caosControlado: index == 14 ? value : null,
     );
   }
 }

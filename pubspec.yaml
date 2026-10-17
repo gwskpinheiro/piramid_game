@@ -8,12 +8,16 @@ environment:
 
 dependencies:
   auto_injector: ^2.1.1
+  cloud_firestore: ^7.0.0
   cupertino_icons: ^1.0.8
   equatable: ^2.0.8
+  firebase_auth: ^7.0.0
+  firebase_core: ^5.0.0
   flutter:
     sdk: flutter
   go_router: ^17.1.0
   google_fonts: ^8.0.1
+  google_sign_in: ^7.2.0
   intl: ^0.20.2
   path: ^1.9.1
   signals_flutter: ^6.3.0

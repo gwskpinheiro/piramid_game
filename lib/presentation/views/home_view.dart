@@ -6,8 +6,10 @@ import '../../core/di/dependency_injection.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_controller.dart';
-import '../../presentation/controllers/aluno_viewmodel.dart';
+import '../../presentation/controllers/ranking_viewmodel.dart';
+import '../../presentation/controllers/pessoa_viewmodel.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/pontuacao_format.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -17,16 +19,19 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  late final AlunoViewModel _vm;
+  late final RankingViewModel _rankingVm;
+  late final PessoaViewModel _pessoaVm;
   late final ThemeController _themeCtrl;
 
   @override
   void initState() {
     super.initState();
-    _vm = injector.get<AlunoViewModel>();
+    _rankingVm = injector.get<RankingViewModel>();
+    _pessoaVm = injector.get<PessoaViewModel>();
     _themeCtrl = injector.get<ThemeController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _vm.commands.carregarAlunos();
+      _rankingVm.commands.carregarRankingGlobal();
+      _pessoaVm.commands.carregarPessoas();
     });
   }
 
@@ -105,11 +110,11 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Watch((_) {
-                    final total = _vm.alunoState.totalAlunos.value;
+                    final total = _pessoaVm.pessoaState.totalPessoas.value;
                     return Text(
                       total == 0
                           ? 'Nenhum aluno cadastrado ainda.'
-                          : '$total aluno${total == 1 ? '' : 's'} no ranking!',
+                          : '$total aluno${total == 1 ? '' : 's'} cadastrado${total == 1 ? '' : 's'}!',
                       style: context.textStyles.titleSmall?.copyWith(
                         color: Colors.white.withOpacity(0.9),
                       ),
@@ -177,19 +182,19 @@ class _HomeViewState extends State<HomeView> {
 
             // Top 3 preview
             Watch((_) {
-              final ranking = _vm.alunoState.ranking.value;
+              final ranking = _rankingVm.rankingState.top3Global.value;
               if (ranking.isEmpty) return const SizedBox.shrink();
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('🏆 Top do Ranking',
+                  Text('🏆 Top 3 do Ranking Global',
                       style: context.textStyles.titleLarge?.semiBold),
                   const SizedBox(height: AppSpacing.md),
-                  ...ranking.take(3).toList().asMap().entries.map((e) {
-                    final pos = e.key + 1;
-                    final aluno = e.value;
-                    final medals = ['🥇', '🥈', '🥉'];
+                  ...ranking.map((item) {
+                    final aluno = item.pessoa;
+                    // Medalha pela posição: empates compartilham a medalha.
+                    final medalha = switch (item.posicao) { 1 => '🥇', 2 => '🥈', _ => '🥉' };
                     return Container(
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       padding: AppSpacing.paddingMd,
@@ -199,8 +204,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       child: Row(
                         children: [
-                          Text(medals[pos - 1],
-                              style: const TextStyle(fontSize: 24)),
+                          Text(medalha, style: const TextStyle(fontSize: 24)),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(
@@ -210,7 +214,8 @@ class _HomeViewState extends State<HomeView> {
                                     style:
                                         context.textStyles.titleSmall?.semiBold),
                                 Text(
-                                  '${aluno.apelido.isNotEmpty ? '"${aluno.apelido}" · ' : ''}${aluno.curso.displayName} ${aluno.turmaAno}',
+                                  '${aluno.apelido.isNotEmpty ? '"${aluno.apelido}" · ' : ''}${aluno.curso.displayName} ${aluno.turmaAno}'
+                                  ' · ${formatarQuantidadeAvaliacoes(item.quantidadeAvaliacoes)}',
                                   style: context.textStyles.bodySmall?.copyWith(
                                     color: scheme.onSurface.withOpacity(0.6),
                                   ),
@@ -226,7 +231,7 @@ class _HomeViewState extends State<HomeView> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              '${aluno.nivelLenda} pts',
+                              formatarPontuacao(item),
                               style: context.textStyles.labelMedium?.copyWith(
                                 color: scheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -240,7 +245,8 @@ class _HomeViewState extends State<HomeView> {
                   const SizedBox(height: AppSpacing.sm),
                   Center(
                     child: TextButton.icon(
-                      onPressed: () => context.goNamed(AppRouteNames.ranking),
+                      onPressed: () => context.goNamed(AppRouteNames.ranking,
+                          queryParameters: {'aba': 'global'}),
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('Ver ranking completo'),
                     ),

@@ -49,3 +49,10 @@ app.*.map.json
 **/GoogleService-Info.plist
 firebase.json
 firebase_options.dart
+
+# Material de referência da disciplina (não versionar)
+/PiramidGame IFPR-Pgua*.pdf
+
+# Artefatos gerados por `dart run sqflite_common_ffi_web:setup`
+/web/sqflite_sw.js
+/web/sqlite3.wasm

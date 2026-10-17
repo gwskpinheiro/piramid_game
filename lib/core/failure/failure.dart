@@ -26,3 +26,13 @@ class InputFailure extends Failure {
 class NotFoundFailure extends Failure {
   NotFoundFailure([String? msg]) : super(msg ?? 'Item não encontrado.');
 }
+
+class RemoteFailure extends Failure {
+  RemoteFailure([String? msg])
+      : super(msg ?? 'Erro ao acessar o servidor. Tente novamente.');
+}
+
+class AuthFailure extends Failure {
+  AuthFailure([String? msg])
+      : super(msg ?? 'Não foi possível concluir a autenticação.');
+}
