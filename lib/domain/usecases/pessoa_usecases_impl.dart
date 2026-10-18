@@ -7,7 +7,8 @@ import '../models/pessoa_entity.dart';
 import 'pessoa_usecases_interfaces.dart';
 
 /// Valida os dados cadastrais; retorna a mensagem de erro ou null.
-String? _validarPessoa(Pessoa p) {
+/// Compartilhada com o cadastro do próprio perfil (vínculo).
+String? validarDadosPessoa(Pessoa p) {
   if (p.nome.trim().isEmpty) return 'O nome é obrigatório.';
   if (p.nome.trim().length > 100) return 'O nome deve ter no máximo 100 caracteres.';
   if (p.apelido.trim().length > 60) return 'O apelido deve ter no máximo 60 caracteres.';
@@ -31,7 +32,7 @@ final class CadastrarPessoaUseCaseImpl implements ICadastrarPessoaUseCase {
     final usuario = _authRepository.usuarioAtual;
     if (usuario == null) return r.Error(AuthFailure('Entre na sua conta para cadastrar.'));
 
-    final erro = _validarPessoa(params.pessoa);
+    final erro = validarDadosPessoa(params.pessoa);
     if (erro != null) return r.Error(InputFailure(erro));
 
     final now = DateTime.now();
@@ -80,7 +81,7 @@ final class AtualizarPessoaUseCaseImpl implements IAtualizarPessoaUseCase {
     if (_authRepository.usuarioAtual?.uid != pessoa.criadoPor) {
       return r.Error(AuthFailure('Apenas quem cadastrou esta pessoa pode editá-la.'));
     }
-    final erro = _validarPessoa(pessoa);
+    final erro = validarDadosPessoa(pessoa);
     if (erro != null) return r.Error(InputFailure(erro));
 
     return _repository.atualizarPessoa(pessoa.copyWith(

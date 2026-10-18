@@ -18,6 +18,7 @@ typedef PermissaoAvaliacaoResult = Result<PermissaoAvaliacao, Failure>;
 typedef ListAvaliacaoResult = Result<List<Avaliacao>, Failure>;
 typedef RankingResult = Result<List<ItemRanking>, Failure>;
 typedef TextoOpcionalResult = Result<String?, Failure>;
+typedef IdsResult = Result<Set<String>, Failure>;
 typedef TemaResult = Result<PreferenciaTema, Failure>;
 
 typedef NoParams = ();

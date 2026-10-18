@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart' as AppTheme;
 import 'firebase_options.dart';
 import 'presentation/controllers/auth_viewmodel.dart';
 import 'presentation/controllers/theme_viewmodel.dart';
+import 'presentation/controllers/vinculo_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +25,14 @@ void main() async {
   await themeViewModel.carregarTema();
 
   // Restaura a sessão persistida pelo Firebase antes de montar as rotas.
-  await injector.get<AuthViewModel>().iniciarMonitoramento();
+  final authViewModel = injector.get<AuthViewModel>();
+  await authViewModel.iniciarMonitoramento();
+
+  // Com sessão ativa, verifica se a conta já identificou o próprio perfil,
+  // para o roteador decidir entre a Home e a tela de identificação.
+  if (authViewModel.authState.isAutenticado.value) {
+    await injector.get<VinculoViewModel>().verificarVinculo();
+  }
 
   runApp(
     Watch(

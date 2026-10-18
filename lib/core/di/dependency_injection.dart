@@ -45,6 +45,15 @@ import '../../domain/facades/ranking_facade_usecases_interface.dart';
 import '../../domain/usecases/ranking_usecases_impl.dart';
 import '../../domain/usecases/ranking_usecases_interfaces.dart';
 import '../../presentation/controllers/ranking_viewmodel.dart';
+import '../../data/repositories/vinculo_repository_impl.dart';
+import '../../data/repositories/vinculo_repository_interface.dart';
+import '../../data/services/vinculo_firestore_impl.dart';
+import '../../data/services/vinculo_remote_storage_interface.dart';
+import '../../domain/facades/vinculo_facade_usecases_impl.dart';
+import '../../domain/facades/vinculo_facade_usecases_interface.dart';
+import '../../domain/usecases/vinculo_usecases_impl.dart';
+import '../../domain/usecases/vinculo_usecases_interfaces.dart';
+import '../../presentation/controllers/vinculo_viewmodel.dart';
 
 final injector = AutoInjector();
 
@@ -97,6 +106,16 @@ void setupDependencyInjection() {
   injector.addSingleton<ICalcularRankingGlobalUseCase>(CalcularRankingGlobalUseCaseImpl.new);
   injector.addSingleton<IRankingFacadeUseCases>(RankingFacadeUseCasesImpl.new);
   injector.addSingleton<RankingViewModel>(RankingViewModel.new);
+
+  // ── Vínculo conta ↔ pessoa (identificação do próprio perfil) ──
+  injector.addSingleton<IVinculoRemoteStorage>(VinculoFirestoreService.new);
+  injector.addSingleton<IVinculoRepository>(VinculoRepositoryImpl.new);
+  injector.addSingleton<IObterVinculoUseCase>(ObterVinculoUseCaseImpl.new);
+  injector.addSingleton<IObterPessoasDisponiveisUseCase>(ObterPessoasDisponiveisUseCaseImpl.new);
+  injector.addSingleton<IVincularPessoaExistenteUseCase>(VincularPessoaExistenteUseCaseImpl.new);
+  injector.addSingleton<ICadastrarPerfilEVincularUseCase>(CadastrarPerfilEVincularUseCaseImpl.new);
+  injector.addSingleton<IVinculoFacadeUseCases>(VinculoFacadeUseCasesImpl.new);
+  injector.addSingleton<VinculoViewModel>(VinculoViewModel.new);
 
   injector.commit();
 }

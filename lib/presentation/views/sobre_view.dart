@@ -134,9 +134,10 @@ class SobreView extends StatelessWidget {
                   '• Ninguém pode avaliar a si próprio.\n'
                   '• Cada usuário tem uma única avaliação por pessoa, que pode '
                   'ser alterada depois.\n'
-                  '• Para avaliar, sua conta precisa estar vinculada a uma '
-                  'pessoa cadastrada. Esse vínculo comprova sua identidade e é '
-                  'feito pelo administrador.',
+                  '• No primeiro acesso, você identifica seu próprio perfil: '
+                  'escolhe-o entre as pessoas cadastradas ou cadastra o seu.\n'
+                  '• Cada perfil pode ser vinculado a uma única conta, e o '
+                  'vínculo não pode ser trocado depois.',
             ),
 
             const SizedBox(height: AppSpacing.md),

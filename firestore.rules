@@ -45,15 +45,16 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
 
+      // Pessoa vinculada a uma conta não pode ser excluída (o vínculo é definitivo).
       allow delete: if autenticado()
-        && resource.data.criadoPor == request.auth.uid;
+        && resource.data.criadoPor == request.auth.uid
+        && !exists(/databases/$(database)/documents/vinculos/$(pessoaId));
     }
 
     // ── usuarios ────────────────────────────────────────────────────────────
-    // Perfil gravado pelo próprio usuário; `pessoaId` (vínculo com uma pessoa
-    // cadastrada) é gravado SOMENTE pelo administrador via Firebase Console,
-    // que não passa por estas regras. O cliente nunca cria, altera ou remove
-    // `pessoaId`, nem na criação do documento.
+    // Perfil gravado pelo próprio usuário. `pessoaId` (vínculo com o próprio
+    // perfil) é gravado UMA única vez, no mesmo lote atômico que cria
+    // `vinculos/{pessoaId}`; depois disso não pode ser alterado nem removido.
 
     function camposPerfil() {
       return ['nome', 'email', 'foto', 'provider', 'ultimoAcesso'];
@@ -67,20 +68,60 @@ service cloud.firestore {
         && d.ultimoAcesso == request.time;
     }
 
+    // Novo vínculo de [uid]: a pessoa existe e `vinculos/{pessoaId}` NÃO existia
+    // antes deste lote e passa a existir nele, apontando para [uid].
+    function vinculoNovoValido(uid) {
+      let p = request.resource.data.pessoaId;
+      return p is string && p.size() > 0 && p.size() <= 128
+        && !exists(/databases/$(database)/documents/vinculos/$(p))
+        && existsAfter(/databases/$(database)/documents/vinculos/$(p))
+        && getAfter(/databases/$(database)/documents/vinculos/$(p)).data.uid == uid
+        && existsAfter(/databases/$(database)/documents/pessoas/$(p));
+    }
+
     match /usuarios/{uid} {
       allow read: if autenticado() && request.auth.uid == uid;
 
+      // Perfil (sem pessoaId) OU vínculo (somente pessoaId, no lote do vínculo).
       allow create: if autenticado() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(camposPerfil())
-        && perfilValido(request.resource.data);
+        && ((request.resource.data.keys().hasOnly(camposPerfil())
+              && perfilValido(request.resource.data))
+          || (request.resource.data.keys().hasOnly(['pessoaId'])
+              && vinculoNovoValido(uid)));
 
-      // affectedKeys inclui campos adicionados, alterados e removidos:
-      // qualquer mudança em pessoaId é recusada.
+      // affectedKeys inclui campos adicionados, alterados e removidos.
+      // pessoaId só pode ser ADICIONADO (uma vez, com vínculo novo); nunca
+      // alterado ou removido.
       allow update: if autenticado() && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(camposPerfil())
-        && perfilValido(request.resource.data);
+        && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(camposPerfil())
+              && perfilValido(request.resource.data))
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pessoaId'])
+              && !('pessoaId' in resource.data)
+              && vinculoNovoValido(uid)));
 
       allow delete: if false;
+    }
+
+    // ── vinculos ────────────────────────────────────────────────────────────
+    // vinculos/{pessoaId} = { uid, criadoEm }. O id é a própria pessoa: só pode
+    // existir UM vínculo por pessoa. Só pode ser criado (nunca alterado ou
+    // apagado), e somente no mesmo lote que grava usuarios/{uid}.pessoaId.
+    // Em criações simultâneas da mesma pessoa, o segundo lote vira "update"
+    // de um documento existente e é recusado.
+    match /vinculos/{pessoaId} {
+      // Permite listar perfis já vinculados (a interface não exibe os uids).
+      allow read: if autenticado();
+
+      allow create: if autenticado()
+        && request.resource.data.keys().hasOnly(['uid', 'criadoEm'])
+        && request.resource.data.keys().hasAll(['uid', 'criadoEm'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && existsAfter(/databases/$(database)/documents/pessoas/$(pessoaId))
+        && getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+             .data.get('pessoaId', null) == pessoaId;
+
+      allow update, delete: if false;
     }
 
     // ── avaliacoes ──────────────────────────────────────────────────────────

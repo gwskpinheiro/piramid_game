@@ -71,8 +71,8 @@ Future<r.Result<Avaliacao, Failure>> _prepararAvaliacao(
   return permissao.fold(
     onSuccess: (p) => switch (p) {
       PermissaoAvaliacao.semVinculo => r.Error(AuthFailure(
-          'Sua conta ainda não está vinculada a uma pessoa cadastrada. '
-          'Peça ao administrador para fazer o vínculo.')),
+          'Sua conta ainda não está vinculada ao seu próprio perfil. '
+          'Conclua a identificação do perfil para poder avaliar.')),
       PermissaoAvaliacao.autoavaliacao =>
         r.Error(AuthFailure('Você não pode avaliar a si mesmo.')),
       PermissaoAvaliacao.permitida => Success(Avaliacao(

@@ -15,9 +15,9 @@ class AvisoAvaliacao extends StatelessWidget {
       PermissaoAvaliacao.semVinculo => (
           Icons.link_off_rounded,
           'Conta ainda não vinculada',
-          'Para avaliar, sua conta precisa estar vinculada a uma pessoa '
-              'cadastrada no app, comprovando sua identidade. Esse vínculo é '
-              'feito pelo administrador — peça a ele para vincular sua conta.',
+          'Para avaliar, sua conta precisa estar vinculada ao seu próprio '
+              'perfil. Saia e entre novamente para concluir a identificação do '
+              'seu perfil.',
         ),
       PermissaoAvaliacao.autoavaliacao => (
           Icons.person_off_rounded,

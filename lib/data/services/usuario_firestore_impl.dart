@@ -8,9 +8,9 @@ import '../../domain/models/usuario_entity.dart';
 import 'usuario_remote_storage_interface.dart';
 
 /// Coleção `usuarios`: um documento por conta (id = uid), com o perfil
-/// gravado pelo próprio usuário e o vínculo `pessoaId` gravado somente
-/// pelo administrador (Firebase Console). As regras do Firestore impedem
-/// que o cliente crie, altere ou remova `pessoaId`.
+/// gravado pelo próprio usuário e o vínculo `pessoaId`, gravado uma única vez
+/// junto com `vinculos/{pessoaId}` (ver VinculoFirestoreService). As regras do
+/// Firestore impedem alterar ou remover `pessoaId` depois de gravado.
 final class UsuarioFirestoreService implements IUsuarioRemoteStorage {
   static const String _colecao = 'usuarios';
 
@@ -22,7 +22,7 @@ final class UsuarioFirestoreService implements IUsuarioRemoteStorage {
   @override
   Future<VoidResult> salvarPerfil(Usuario usuario) async {
     try {
-      // merge: preserva o pessoaId definido pelo administrador.
+      // merge: preserva o pessoaId já vinculado.
       await _doc(usuario.uid).set({
         'nome': usuario.nome ?? '',
         'email': usuario.email ?? '',

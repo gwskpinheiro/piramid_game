@@ -102,9 +102,12 @@ final class PessoaFirestoreService implements IPessoaRemoteStorage {
   }
 
   String _mensagem(FirebaseException e, String acao) => switch (e.code) {
-        'permission-denied' => acao == 'carregar' || acao == 'cadastrar'
-            ? 'Sem permissão para $acao. Verifique se você está logado.'
-            : 'Sem permissão para $acao: apenas quem cadastrou a pessoa pode fazer isso.',
+        'permission-denied' => switch (acao) {
+            'carregar' || 'cadastrar' => 'Sem permissão para $acao. Verifique se você está logado.',
+            'remover' => 'Não é possível remover: apenas quem cadastrou a pessoa pode '
+                'removê-la, e pessoas vinculadas a uma conta não podem ser removidas.',
+            _ => 'Sem permissão para $acao: apenas quem cadastrou a pessoa pode fazer isso.',
+          },
         'unavailable' || 'deadline-exceeded' =>
           'Servidor indisponível. Verifique sua conexão e tente novamente.',
         'unauthenticated' => 'Sua sessão expirou. Entre novamente.',

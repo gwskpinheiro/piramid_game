@@ -47,7 +47,7 @@ void main() {
       'Cloud Firestore',
       'SharedPreferences',
       'avaliar a si próprio',
-      'administrador',
+      'vinculado a uma única conta',
       'Tema Claro e Escuro',
     ]) {
       expect(texto, contains(esperado), reason: 'faltou: $esperado');
