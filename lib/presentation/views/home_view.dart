@@ -5,7 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../core/di/dependency_injection.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/theme/theme_controller.dart';
+import '../../presentation/controllers/theme_viewmodel.dart';
 import '../../presentation/controllers/ranking_viewmodel.dart';
 import '../../presentation/controllers/pessoa_viewmodel.dart';
 import '../widgets/app_drawer.dart';
@@ -21,14 +21,14 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late final RankingViewModel _rankingVm;
   late final PessoaViewModel _pessoaVm;
-  late final ThemeController _themeCtrl;
+  late final ThemeViewModel _themeCtrl;
 
   @override
   void initState() {
     super.initState();
     _rankingVm = injector.get<RankingViewModel>();
     _pessoaVm = injector.get<PessoaViewModel>();
-    _themeCtrl = injector.get<ThemeController>();
+    _themeCtrl = injector.get<ThemeViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rankingVm.commands.carregarRankingGlobal();
       _pessoaVm.commands.carregarPessoas();
@@ -48,7 +48,7 @@ class _HomeViewState extends State<HomeView> {
             return IconButton(
               icon: Icon(isLight ? Icons.dark_mode : Icons.light_mode),
               tooltip: 'Alternar tema',
-              onPressed: _themeCtrl.toggleTheme,
+              onPressed: _themeCtrl.alternarTema,
             );
           }),
         ],

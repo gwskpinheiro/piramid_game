@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../core/di/dependency_injection.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/theme/theme_controller.dart';
+import '../controllers/theme_viewmodel.dart';
 import '../controllers/auth_viewmodel.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -12,7 +12,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeCtrl = injector.get<ThemeController>();
+    final themeCtrl = injector.get<ThemeViewModel>();
     final authVm = injector.get<AuthViewModel>();
     final scheme = Theme.of(context).colorScheme;
 
@@ -62,7 +62,7 @@ class AppDrawer extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(isLight ? 'Tema Claro' : 'Tema Escuro', style: context.textStyles.bodyMedium),
           const Spacer(),
-          Switch(value: !isLight, activeColor: scheme.primary, onChanged: (_) => themeCtrl.toggleTheme()),
+          Switch(value: !isLight, activeColor: scheme.primary, onChanged: (_) => themeCtrl.alternarTema()),
         ]));
       }),
       const SizedBox(height: AppSpacing.sm),

@@ -8,9 +8,9 @@ import 'package:sqflite/sqflite.dart';
 import 'core/di/dependency_injection.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart' as AppTheme;
-import 'core/theme/theme_controller.dart';
 import 'firebase_options.dart';
 import 'presentation/controllers/auth_viewmodel.dart';
+import 'presentation/controllers/theme_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +28,9 @@ void main() async {
 
   setupDependencyInjection();
 
-  final themeController = injector.get<ThemeController>();
+  // Recupera o tema salvo (SharedPreferences) antes de exibir a interface.
+  final themeViewModel = injector.get<ThemeViewModel>();
+  await themeViewModel.carregarTema();
 
   // Restaura a sessão persistida pelo Firebase antes de montar as rotas.
   await injector.get<AuthViewModel>().iniciarMonitoramento();
@@ -40,7 +42,7 @@ void main() async {
         title: 'PiramidGame IFPR-Pgua',
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: themeController.themeMode.value,
+        themeMode: themeViewModel.themeMode.value,
         routerConfig: AppRouter.router,
       ),
     ),

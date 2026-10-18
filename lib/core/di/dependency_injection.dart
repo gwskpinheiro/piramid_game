@@ -1,6 +1,14 @@
 import 'package:auto_injector/auto_injector.dart';
 
-import '../../core/theme/theme_controller.dart';
+import '../../data/repositories/preference_repository_impl.dart';
+import '../../data/repositories/preference_repository_interface.dart';
+import '../../data/services/local_storage_interface.dart';
+import '../../data/services/local_storage_service.dart'; // ← SharedPreferences
+import '../../domain/facades/tema_facade_usecases_impl.dart';
+import '../../domain/facades/tema_facade_usecases_interface.dart';
+import '../../domain/usecases/tema_usecases_impl.dart';
+import '../../domain/usecases/tema_usecases_interfaces.dart';
+import '../../presentation/controllers/theme_viewmodel.dart';
 import '../../data/repositories/aluno_repository_impl.dart';
 import '../../data/repositories/aluno_repository_interface.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -50,8 +58,13 @@ import '../../presentation/controllers/ranking_viewmodel.dart';
 final injector = AutoInjector();
 
 void setupDependencyInjection() {
-  // Core
-  injector.addSingleton<ThemeController>(ThemeController.new);
+  // Core — Tema (preferência local via SharedPreferences)
+  injector.addSingleton<ILocalStorageService>(LocalStorageService.new);
+  injector.addSingleton<IPreferenceRepository>(PreferenceRepositoryImpl.new);
+  injector.addSingleton<IObterTemaUseCase>(ObterTemaUseCaseImpl.new);
+  injector.addSingleton<IAlterarTemaUseCase>(AlterarTemaUseCaseImpl.new);
+  injector.addSingleton<ITemaFacadeUseCases>(TemaFacadeUseCasesImpl.new);
+  injector.addSingleton<ThemeViewModel>(ThemeViewModel.new);
 
   // Data — Service (SQLite)
   injector.addSingleton<IAlunoLocalStorage>(AlunoSqliteService.new);
