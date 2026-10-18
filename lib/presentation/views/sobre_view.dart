@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../domain/models/avaliacao_entity.dart';
 import '../widgets/app_drawer.dart';
 
 class SobreView extends StatelessWidget {
@@ -66,11 +67,10 @@ class SobreView extends StatelessWidget {
               icon: Icons.info_outline,
               title: 'Objetivo do App',
               content:
-                  'O Ranking de Popularidade dos Alunos é um aplicativo '
-                  'desenvolvido em Flutter para fins didáticos. Ele permite '
-                  'cadastrar alunos do IFPR – Campus Paranaguá e avaliá-los '
-                  'em critérios descontraídos de convivência, destaque e '
-                  'participação na turma.',
+                  'O PiramidGame IFPR-Pgua é um aplicativo desenvolvido em '
+                  'Flutter para fins didáticos. Ele permite cadastrar pessoas '
+                  'do IFPR – Campus Paranaguá e avaliá-las em critérios '
+                  'descontraídos de convivência, destaque e participação.',
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -80,22 +80,9 @@ class SobreView extends StatelessWidget {
               title: 'Contexto',
               content:
                   'O app nasceu de uma ideia divertida entre alunos do IFPR – '
-                  'Campus Paranaguá, que decidiram criar um sistema para '
-                  'ranquear os colegas por popularidade, carisma, presença e '
-                  'outros talentos socialmente valorizados nos corredores do campus.',
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-
-            _InfoCard(
-              icon: Icons.star_outline_rounded,
-              title: 'Como funciona o Ranking',
-              content:
-                  'Cada aluno é avaliado em 15 critérios de popularidade, '
-                  'recebendo notas de 1 a 5 estrelas em cada um. '
-                  'A soma de todas as notas forma o Nível Lenda, '
-                  'que varia de 15 (mínimo) a 75 (máximo) pontos. '
-                  'O ranking é ordenado automaticamente do maior para o menor Nível Lenda.',
+                  'Campus Paranaguá para descobrir quem domina o Nível Lenda. '
+                  'Com os dados na nuvem, todos participam do mesmo ranking, '
+                  'e não de um ranking diferente em cada aparelho.',
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -106,12 +93,62 @@ class SobreView extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
 
             _InfoCard(
-              icon: Icons.storage_outlined,
-              title: 'Armazenamento de Dados',
+              icon: Icons.star_outline_rounded,
+              title: 'Nível Lenda',
               content:
-                  'Todos os dados são armazenados localmente no dispositivo '
-                  'utilizando SQLite (banco de dados local). Os dados permanecem salvos '
-                  'mesmo após fechar o aplicativo.',
+                  'A soma das 15 notas de uma avaliação forma o Nível Lenda, '
+                  'que vai de 15 pontos (15 × 1 estrela) a 75 pontos '
+                  '(15 × 5 estrelas).',
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            _InfoCard(
+              icon: Icons.person_rounded,
+              title: 'Ranking Pessoal',
+              content:
+                  '“Na minha opinião, quem possui o maior Nível Lenda?”\n'
+                  'Considera exclusivamente as avaliações feitas por você, '
+                  'ordenadas da maior para a menor pontuação.',
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            _InfoCard(
+              icon: Icons.public_rounded,
+              title: 'Ranking Global',
+              content:
+                  '“Na opinião dos usuários do aplicativo, quem possui o maior '
+                  'Nível Lenda?”\n'
+                  'Considera as avaliações de todos os usuários: a pontuação '
+                  'de cada pessoa é a média das avaliações recebidas, exibida '
+                  'junto com a quantidade de avaliações.',
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            _InfoCard(
+              icon: Icons.rule_rounded,
+              title: 'Regras de Avaliação',
+              content:
+                  '• Ninguém pode avaliar a si próprio.\n'
+                  '• Cada usuário tem uma única avaliação por pessoa, que pode '
+                  'ser alterada depois.\n'
+                  '• Para avaliar, sua conta precisa estar vinculada a uma '
+                  'pessoa cadastrada. Esse vínculo comprova sua identidade e é '
+                  'feito pelo administrador.',
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            _InfoCard(
+              icon: Icons.cloud_outlined,
+              title: 'Login e Armazenamento',
+              content:
+                  'O acesso utiliza Firebase Authentication, com e-mail e '
+                  'senha ou conta Google. Pessoas, avaliações e rankings ficam '
+                  'no Cloud Firestore, então seus dados estão disponíveis em '
+                  'qualquer aparelho em que você entrar com a mesma conta.',
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -120,9 +157,9 @@ class SobreView extends StatelessWidget {
               icon: Icons.brightness_6_outlined,
               title: 'Tema Claro e Escuro',
               content:
-                  'O aplicativo suporta alternância entre tema claro e tema '
-                  'escuro em tempo de execução. Acesse a opção pelo menu '
-                  'lateral ou pelo ícone na barra superior.',
+                  'Alterne entre tema claro e escuro pelo menu lateral ou pelo '
+                  'ícone na barra superior. Sua escolha fica salva no aparelho '
+                  'com SharedPreferences, usado apenas para essa preferência.',
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -132,13 +169,13 @@ class SobreView extends StatelessWidget {
               icon: Icons.code_rounded,
               title: 'Tecnologias',
               content:
-                  '• Flutter (framework principal)\n'
-                  '• SQLite com sqflite (banco de dados local)\n'
+                  '• Flutter\n'
+                  '• Firebase Authentication e Cloud Firestore\n'
+                  '• SharedPreferences (preferência de tema)\n'
                   '• go_router (navegação)\n'
-                  '• Flutter Signals (gerência de estado reativa)\n'
-                  '• Padrão MVVM + Command + Result\n'
-                  '• Arquitetura Limpa (Clean Architecture)\n'
-                  '• Princípios SOLID',
+                  '• Flutter Signals (estado reativo)\n'
+                  '• MVVM, Command e Result\n'
+                  '• Arquitetura Limpa e princípios SOLID',
             ),
 
             const SizedBox(height: AppSpacing.xxl),
@@ -206,13 +243,9 @@ class _CriteriosCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
+    // Mesma lista usada na tela de avaliação.
     final criterios = [
-      '1. Resenha', '2. Presença VIP', '3. Aura', '4. Modo Parceiro',
-      '5. Carisma Natural', '6. Humor de Milhões', '7. Energia de Grupo',
-      '8. Criatividade Caótica', '9. Modo Atleta', '10. Talento de Palco',
-      '11. Drip Escolar', '12. Coração de Dorama',
-      '13. Queridinho dos Professores', '14. Cérebro Turbo',
-      '15. Caos Controlado',
+      for (var i = 0; i < listaCriterios.length; i++) '${i + 1}. ${listaCriterios[i].$1}',
     ];
 
     return Container(
@@ -237,6 +270,14 @@ class _CriteriosCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Cada avaliação atribui de 1 a 5 estrelas em cada critério.',
+            style: context.textStyles.bodyMedium?.copyWith(
+              color: scheme.onSurface.withValues(alpha: 0.8),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
