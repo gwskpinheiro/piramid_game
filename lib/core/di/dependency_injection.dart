@@ -9,23 +9,14 @@ import '../../domain/facades/tema_facade_usecases_interface.dart';
 import '../../domain/usecases/tema_usecases_impl.dart';
 import '../../domain/usecases/tema_usecases_interfaces.dart';
 import '../../presentation/controllers/theme_viewmodel.dart';
-import '../../data/repositories/aluno_repository_impl.dart';
-import '../../data/repositories/aluno_repository_interface.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/auth_repository_interface.dart';
-import '../../data/services/aluno_local_storage_interface.dart';
-import '../../data/services/aluno_sqlite_impl.dart';         // ← SQLite
 import '../../data/services/auth_service_interface.dart';
 import '../../data/services/firebase_auth_service_impl.dart'; // ← Firebase Auth
-import '../../domain/facades/aluno_facade_usecases_impl.dart';
-import '../../domain/facades/aluno_facade_usecases_interface.dart';
 import '../../domain/facades/auth_facade_usecases_impl.dart';
 import '../../domain/facades/auth_facade_usecases_interface.dart';
-import '../../domain/usecases/aluno_usecases_impl.dart';
-import '../../domain/usecases/aluno_usecases_interfaces.dart';
 import '../../domain/usecases/auth_usecases_impl.dart';
 import '../../domain/usecases/auth_usecases_interfaces.dart';
-import '../../presentation/controllers/aluno_viewmodel.dart';
 import '../../presentation/controllers/auth_viewmodel.dart';
 import '../../presentation/controllers/pessoa_viewmodel.dart';
 import '../../data/repositories/pessoa_repository_impl.dart';
@@ -65,26 +56,6 @@ void setupDependencyInjection() {
   injector.addSingleton<IAlterarTemaUseCase>(AlterarTemaUseCaseImpl.new);
   injector.addSingleton<ITemaFacadeUseCases>(TemaFacadeUseCasesImpl.new);
   injector.addSingleton<ThemeViewModel>(ThemeViewModel.new);
-
-  // Data — Service (SQLite)
-  injector.addSingleton<IAlunoLocalStorage>(AlunoSqliteService.new);
-
-  // Data — Repository
-  injector.addSingleton<IAlunoRepository>(AlunoRepositoryImpl.new);
-
-  // Domain — Use Cases
-  injector.addSingleton<ICadastrarAlunoUseCase>(CadastrarAlunoUseCaseImpl.new);
-  injector.addSingleton<IObterTodosAlunosUseCase>(ObterTodosAlunosUseCaseImpl.new);
-  injector.addSingleton<IObterAlunoPorIdUseCase>(ObterAlunoPorIdUseCaseImpl.new);
-  injector.addSingleton<IAtualizarAlunoUseCase>(AtualizarAlunoUseCaseImpl.new);
-  injector.addSingleton<IDeletarAlunoUseCase>(DeletarAlunoUseCaseImpl.new);
-  injector.addSingleton<ICalcularRankingUseCase>(CalcularRankingUseCaseImpl.new);
-
-  // Domain — Facade
-  injector.addSingleton<IAlunoFacadeUseCases>(AlunoFacadeUseCasesImpl.new);
-
-  // Presentation — ViewModel
-  injector.addSingleton<AlunoViewModel>(AlunoViewModel.new);
 
   // ── Autenticação ──
   injector.addSingleton<IAuthService>(FirebaseAuthService.new);
