@@ -11,4 +11,10 @@ class RankingStateViewModel {
 
   late final top3Global = computed<List<ItemRanking>>(
       () => rankingGlobal.value.take(3).toList());
+
+  void limparPessoal() {
+    rankingPessoal.value = [];
+    erroPessoal.value = null;
+    carregandoPessoal.value = false;
+  }
 }

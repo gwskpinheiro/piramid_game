@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:piramid_game/core/di/dependency_injection.dart';
 import 'package:piramid_game/core/patterns/result.dart';
 import 'package:piramid_game/core/typedefs/types_defs.dart';
+import 'package:piramid_game/domain/facades/auth_facade_usecases_interface.dart';
 import 'package:piramid_game/domain/facades/ranking_facade_usecases_interface.dart';
 import 'package:piramid_game/domain/models/pessoa_entity.dart';
 import 'package:piramid_game/domain/models/ranking_entity.dart';
+import 'package:piramid_game/presentation/controllers/auth_viewmodel.dart';
 import 'package:piramid_game/presentation/controllers/ranking_viewmodel.dart';
 import 'package:piramid_game/presentation/views/ranking/ranking_view.dart';
 
@@ -29,9 +31,15 @@ class _FakeRankingFacade implements IRankingFacadeUseCases {
       ]);
 }
 
+class _SemAuthFacade implements IAuthFacadeUseCases {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   setUpAll(() {
-    injector.addInstance<RankingViewModel>(RankingViewModel(_FakeRankingFacade()));
+    injector.addInstance<RankingViewModel>(
+        RankingViewModel(_FakeRankingFacade(), AuthViewModel(_SemAuthFacade())));
     injector.commit();
   });
 

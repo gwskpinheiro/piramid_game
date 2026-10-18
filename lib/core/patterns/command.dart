@@ -28,20 +28,30 @@ abstract base class Command<Success, Error>
 
   // Execução em andamento (reaproveitada se call() for chamado de novo)
   Future<Result<Success, Error>>? _emAndamento;
+  // Identifica a execução atual; reset() troca o token e invalida as anteriores.
+  Object _token = Object();
 
   // Método para executar o comando com tratamento
-  Future<Result<Success, Error>> call() =>
-      _emAndamento ??= _executar().whenComplete(() => _emAndamento = null);
+  Future<Result<Success, Error>> call() {
+    final existente = _emAndamento;
+    if (existente != null) return existente;
+    late final Future<Result<Success, Error>> futuro;
+    futuro = _executar(_token).whenComplete(() {
+      if (identical(_emAndamento, futuro)) _emAndamento = null;
+    });
+    return _emAndamento = futuro;
+  }
 
-  Future<Result<Success, Error>> _executar() async {
+  Future<Result<Success, Error>> _executar(Object token) async {
     _running.value = true; // indica que está rodando
     _result.value = null; // limpa resultado anterior
     try {
       final result = await execute(); // executa a ação
-      _result.value = result;
+      if (identical(token, _token)) _result.value = result;
       return result;
     } finally {
-      _running.value = false; // indica que terminou (mesmo com exceção)
+      // indica que terminou (mesmo com exceção), se não foi descartada
+      if (identical(token, _token)) _running.value = false;
     }
   }
 
@@ -49,7 +59,11 @@ abstract base class Command<Success, Error>
     _result.value = null;
   }
 
+  /// Descarta a execução em andamento: a próxima chamada a call() inicia uma
+  /// nova execução em vez de reaproveitar a anterior (ex.: troca de usuário).
   void reset() {
+    _token = Object();
+    _emAndamento = null;
     _running.value = false;
     clear();
   }

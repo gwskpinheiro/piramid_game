@@ -20,4 +20,12 @@ class PessoaStateViewModel {
   void removerPessoa(String id) =>
       pessoas.value = pessoas.value.where((x) => x.id != id).toList();
   void selecionarPessoa(Pessoa? p) => pessoaSelecionada.value = p;
+
+  /// Remove os dados da sessão anterior (logout/troca de conta).
+  void limpar() {
+    pessoas.value = [];
+    mensagem.value = null;
+    isLoading.value = false;
+    pessoaSelecionada.value = null;
+  }
 }

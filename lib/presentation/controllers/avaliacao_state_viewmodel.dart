@@ -31,6 +31,18 @@ class AvaliacaoStateViewModel {
     erroCarregamento.value = null;
   }
 
+  /// Remove todos os dados do usuário anterior (logout/troca de conta).
+  void limpar() {
+    pessoaId.value = null;
+    permissao.value = null;
+    avaliacaoAtual.value = null;
+    criterios.value = const CriteriosPopularidade();
+    mensagem.value = null;
+    erroCarregamento.value = null;
+    isLoading.value = false;
+    isSaving.value = false;
+  }
+
   void setAvaliacao(Avaliacao? a) {
     avaliacaoAtual.value = a;
     criterios.value = a?.criterios ?? const CriteriosPopularidade();

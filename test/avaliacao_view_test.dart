@@ -82,11 +82,12 @@ GoRouter _router() => GoRouter(initialLocation: '/aluno-detalhe/p1', routes: [
 
 void main() {
   setUpAll(() async {
-    injector.addInstance<AuthViewModel>(AuthViewModel(_FakeAuthFacade()));
-    injector.addInstance<AvaliacaoViewModel>(AvaliacaoViewModel(_facade));
-    injector.addInstance<PessoaViewModel>(PessoaViewModel(_FakePessoaFacade()));
+    final auth = AuthViewModel(_FakeAuthFacade());
+    injector.addInstance<AuthViewModel>(auth);
+    injector.addInstance<AvaliacaoViewModel>(AvaliacaoViewModel(_facade, auth));
+    injector.addInstance<PessoaViewModel>(PessoaViewModel(_FakePessoaFacade(), auth));
     injector.commit();
-    await injector.get<AuthViewModel>().iniciarMonitoramento();
+    await auth.iniciarMonitoramento();
     await injector.get<PessoaViewModel>().commands.carregarPessoas();
   });
 

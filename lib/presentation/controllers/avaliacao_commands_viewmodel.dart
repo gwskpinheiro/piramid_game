@@ -18,14 +18,30 @@ class AvaliacaoCommandsViewModel {
   })  : _verificarCmd = verificarCmd, _consultarCmd = consultarCmd,
         _avaliarCmd = avaliarCmd, _alterarCmd = alterarCmd;
 
+  /// Muda a cada troca de usuário; respostas de uma sessão anterior são descartadas.
+  int _sessao = 0;
+
+  /// Remove permissão, avaliação e notas do usuário anterior (logout/troca de
+  /// conta) e descarta requisições ainda em andamento.
+  void limparDadosDoUsuario() {
+    _sessao++;
+    _verificarCmd.reset();
+    _consultarCmd.reset();
+    _avaliarCmd.reset();
+    _alterarCmd.reset();
+    state.limpar();
+  }
+
   /// Carrega a permissão (vínculo/autoavaliação) e a avaliação já existente.
   ///
   /// Deve ser chamado fora da fase de build (ex.: addPostFrameCallback), pois
   /// altera signals observados por outras telas. Nunca deixa a tela presa em
   /// carregamento: qualquer falha vira uma mensagem em [erroCarregamento].
   Future<void> carregar(String pessoaId) async {
-    // Se outro carregamento começar no meio deste, o resultado antigo é ignorado.
-    bool atual() => state.pessoaId.value == pessoaId;
+    // Se outro carregamento (ou outro usuário) começar no meio deste, o
+    // resultado antigo é ignorado.
+    final sessao = _sessao;
+    bool atual() => sessao == _sessao && state.pessoaId.value == pessoaId;
     try {
       state.iniciar(pessoaId);
       state.isLoading.value = true;
@@ -68,6 +84,7 @@ class AvaliacaoCommandsViewModel {
   Future<bool> salvar() async {
     final pessoaId = state.pessoaId.value;
     if (pessoaId == null) return false;
+    final sessao = _sessao;
     state.limparMensagem();
     state.isSaving.value = true;
 
@@ -75,6 +92,9 @@ class AvaliacaoCommandsViewModel {
     final result = state.jaAvaliou.value
         ? await _alterarCmd.executeWith(params)
         : await _avaliarCmd.executeWith(params);
+
+    // Usuário trocou durante a gravação: não exibe o resultado ao novo usuário.
+    if (sessao != _sessao) return false;
 
     final ok = result.fold(
       onSuccess: (a) {
